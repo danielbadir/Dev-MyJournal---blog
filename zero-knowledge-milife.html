@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!-- LPagesAppLabs Platform v1.0 · Dev MyJournal · contact@lpagesapplabs.com -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="color-scheme" content="dark">
+  <title>Zero-Knowledge by Design: Architecture Notes for miLife — Dev MyJournal</title>
+  <meta name="description" content="Why I'm building a local-first life archive with no accounts, no cloud, and AES-256-GCM encryption. The philosophy behind Lives & Moments and the decisions that define what miLife will not do.">
+  <link rel="canonical" href="https://blog.lpagesapplabs.com/posts/zero-knowledge-milife.html" />
+  <meta property="og:title" content="Zero-Knowledge by Design: Architecture Notes for miLife" />
+  <meta property="og:description" content="Building a private life archive: no accounts, no cloud, no one else. The design decisions behind Lives & Moments, local-first storage, and AES-256-GCM encryption." />
+  <meta property="og:url" content="https://blog.lpagesapplabs.com/posts/zero-knowledge-milife.html" />
+  <meta property="og:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Zero-Knowledge by Design: Architecture Notes for miLife" />
+  <meta name="twitter:description" content="Building a private life archive: no accounts, no cloud, no one else. The design decisions behind Lives & Moments, local-first storage, and AES-256-GCM encryption." />
+  <meta name="twitter:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta name="theme-color" content="#0F172A">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="https://lpagesapplabs.com/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+  <link href="https://fonts.bunny.net/css2?family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="zero-knowledge.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Zero-Knowledge by Design: Architecture Notes for miLife",
+  "description": "Building a private life archive — no accounts, no cloud, no one else. Design decisions behind Lives & Moments, local-first storage, and AES-256-GCM from the start.",
+  "author": {
+    "@type": "Person",
+    "name": "D.Badi",
+    "url": "https://lpagesapplabs.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "LPagesAppLabs",
+    "url": "https://lpagesapplabs.com"
+  },
+  "datePublished": "2026-06-19",
+  "dateModified": "2026-06-20",
+  "url": "https://blog.lpagesapplabs.com/posts/zero-knowledge-milife.html",
+  "keywords": "zero-knowledge, local-first, AES-256-GCM, miLife, privacy, architecture",
+  "image": "https://lpagesapplabs.com/og-image.png"
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div id="progress-bar"></div>
+
+<nav>
+  <a href="../index.html" class="nav-logo"><span>Dev</span>MyJournal</a>
+  <div class="nav-links">
+    <a href="../index.html">← All Posts</a>
+    <a href="https://milife.lpagesapplabs.com" rel="noopener noreferrer">miLife</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">Platform</a>
+  </div>
+</nav>
+
+<main class="page-wrap" id="main-content">
+
+  <aside class="toc-aside">
+    <div class="toc-label">// In this post</div>
+    <ul class="toc-list" id="toc">
+      <li><a href="#the-problem" class="h2">The Problem</a></li>
+      <li><a href="#why-existing-tools-fail" class="h2">Why Existing Tools Fail</a></li>
+      <li><a href="#lives-moments" class="h2">Lives &amp; Moments</a></li>
+      <li><a href="#why-local-first" class="h2">Why Local-First</a></li>
+      <li><a href="#encryption" class="h2">Encryption Choices</a></li>
+      <li><a href="#argon2id" class="h3">Key Derivation</a></li>
+      <li><a href="#aes" class="h3">Content Encryption</a></li>
+      <li><a href="#tradeoffs" class="h2">The Hard Trade-offs</a></li>
+      <li><a href="#status" class="h2">Where It Is Now</a></li>
+    </ul>
+  </aside>
+
+  <article>
+    <div class="post-meta-bar">
+      <span class="cat-tag">Privacy</span>
+      <span class="depth-tag">Architecture</span>
+      <span class="meta-info">D.Badi · 2026-06-20 · 7 min read</span>
+    </div>
+
+    <h1 class="post-title">Zero-Knowledge by Design:<br>Architecture Notes for miLife</h1>
+    <p class="post-lead">I have journals from a decade ago sitting in apps I no longer trust, on servers I did not agree to at the time. That bothered me enough to start building a different kind of archive — one where the data stays on the device, encrypted before it is ever saved, and where I am the only one with the key. This is what I have designed so far and why the decisions are what they are.</p>
+
+    <div class="prose">
+
+      <h2 id="the-problem">The Problem With Trusting Convenience</h2>
+      <p>Most people have their personal memories scattered across a handful of apps and services that were never designed to hold memories — photo storage apps, note-taking tools, social platforms, voice memos. None of them talk to each other. Most of them hold your data on their servers. A few of them have been breached or acquired or simply shut down, taking data with them.</p>
+      <p>This is not a paranoid framing. It is what happens when you store personal information inside products whose primary interest is the product, not the archive. Convenience trades against control. The more convenient the storage, the more of your data lives somewhere you cannot fully audit.</p>
+      <p>I am not interested in building another convenient app with a premium subscription tier where "enhanced privacy" costs extra. I am interested in building an archive where the design assumption — from the very first decision — is that <em>no one except you should ever be able to read it.</em> That constraint changes everything.</p>
+
+      <h2 id="why-existing-tools-fail">Why Existing Tools Do Not Solve This</h2>
+      <p>Before I started building, I spent time looking at what already exists. The landscape is better than it was five years ago, but the fundamental problem remains:</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr><th>Tool</th><th>Privacy model</th><th>The problem</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Apple Journal</td>
+            <td>Device + iCloud</td>
+            <td class="td-bad">iCloud backup decrypts on Apple's servers unless you enable Advanced Data Protection manually — most users never do</td>
+          </tr>
+          <tr>
+            <td>Day One</td>
+            <td>End-to-end optional</td>
+            <td class="td-bad">E2E encryption is a paid feature. Free tier syncs through Day One's servers. The default is not zero-knowledge.</td>
+          </tr>
+          <tr>
+            <td>Notion</td>
+            <td>Server-side</td>
+            <td class="td-bad">Your notes are a database row in Notion's infrastructure. Encrypted at rest in their systems, not yours.</td>
+          </tr>
+          <tr>
+            <td>Standard Notes</td>
+            <td>E2E encrypted</td>
+            <td class="td-good">Genuinely zero-knowledge. Good model. But structured around notes, not a life archive with a navigable hierarchy.</td>
+          </tr>
+          <tr>
+            <td>Physical notebook</td>
+            <td>Offline</td>
+            <td class="td-bad">Not searchable. Not backed up. Not cross-device. Not recoverable if lost.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Standard Notes comes closest to the right privacy model. The gap is structure. A flat list of encrypted notes is not a life archive. It is an encrypted inbox that eventually becomes unsearchable.</p>
+
+      <h2 id="lives-moments">Lives &amp; Moments: Why Structure Matters</h2>
+      <p>The core design decision in miLife is that your archive is not a journal. A journal implies chronological entries. Life does not work chronologically — it works in contexts.</p>
+      <p>You have a <strong>life</strong> as a professional. A life as a parent, partner, friend. A life as someone with specific health concerns, hobbies, long-term projects. Those contexts exist in parallel, not in sequence. When you want to find something from five years ago, you rarely remember the date. You remember the context — which part of your life it belonged to.</p>
+      <p><strong>Moments</strong> belong to Lives. A Moment is a discrete entry: an event, a thought, a photo, a voice note. Every Moment is assigned to one or more Lives. The archive is navigable by context, not just by time. Searching your professional Life for entries about a specific collaborator finds everything relevant regardless of when it was recorded.</p>
+
+      <div class="callout callout-good">
+        <strong>// Why this is hard to retrofit</strong>
+        <p>Most journal and note-taking apps start with a flat structure and add organisation later as tags or folders. That works for notes. It does not work for a life archive where you need to ask questions like "what were my thoughts about this health issue across the last three years?" The hierarchy has to be a first-class concept from the beginning, not a workaround bolted on after the fact.</p>
+      </div>
+
+      <h2 id="why-local-first">Why Local-First</h2>
+      <p>Local-first means the canonical copy of your data lives on your device, not on a server. Sync, if it exists, is a replication of that local truth — not the other way around.</p>
+      <p>The reason I chose this model is not primarily technical. It is about ownership. When your data lives on a server, your access to it is contingent on a company's continued operation, continued pricing, continued terms of service, and continued security record. Four things, any one of which can change without your consent.</p>
+      <p>A file on your device that you encrypted with your own key is yours unconditionally. You can back it up yourself, using whatever backup strategy you trust. You can move it. You can keep it indefinitely. No subscription required to access your own history.</p>
+
+      <div class="callout callout-warn">
+        <strong>// The honest version</strong>
+        <p>Local-first is a harder technical problem than cloud-first. You have to solve sync, conflict resolution, and backup without a server to act as the single source of truth. I am not pretending these problems are easy. I am saying they are worth solving rather than trading them away for convenience.</p>
+      </div>
+
+      <h2 id="encryption">Encryption Choices</h2>
+
+      <h3 id="argon2id">Key Derivation: Argon2id</h3>
+      <p>The archive is unlocked with a passphrase. That passphrase is never stored anywhere. It is used to derive the encryption key using <strong>Argon2id</strong> — the winner of the Password Hashing Competition and the current OWASP recommendation for password-based key derivation.</p>
+      <p>Why Argon2id over bcrypt or PBKDF2? I covered this in detail in <a href="./argon2id-vs-pbkdf2.html">the previous post on key derivation</a>. The short version: Argon2id is memory-hard and time-hard simultaneously, which means it is expensive to attack both on GPUs and on custom ASIC hardware. PBKDF2 is only time-hard — a fast GPU attack is significantly cheaper. For a life archive that may hold decades of personal data, the resistance to hardware attacks matters more than compatibility.</p>
+      <p>The parameters are tuned to the OWASP recommended minimums — enough memory and iteration cost to be genuinely expensive to attack at scale, while remaining fast enough that unlock feels immediate on a normal phone. The key output is 256 bits, matching the AES-256 cipher used for content encryption.</p>
+
+      <h3 id="aes">Content Encryption: AES-256-GCM</h3>
+      <p>Each Moment is encrypted individually using <strong>AES-256-GCM</strong>. GCM (Galois/Counter Mode) provides both confidentiality and authentication — the cipher produces an authentication tag that detects any modification to the ciphertext. You cannot tamper with an encrypted Moment without the decryption failing, loudly.</p>
+      <p>The 256-bit key derived from Argon2id is what encrypts each Moment. Each Moment gets a unique nonce generated from a cryptographically secure random source. The nonce is stored with the ciphertext — it does not need to be secret. Reusing a nonce with the same key would be catastrophic (it breaks GCM's security guarantees), so a fresh nonce is generated for every single encryption operation without exception.</p>
+      <p>This is the same approach used in <a href="https://lockedpages.lpagesapplabs.com" rel="noopener noreferrer">LockedPages</a> — consistency across the platform means the same audited decisions, not a different choice made under different time pressure.</p>
+
+      <div class="callout callout-good">
+        <strong>// On disclosing the algorithm</strong>
+        <p>Some people ask whether publishing the encryption details is a security risk. It is not. This is Kerckhoffs's principle: a cryptographic system should be secure even if everything about it except the key is public knowledge. AES-256-GCM and Argon2id are public standards. The security comes from the key, which never leaves your device. Keeping the algorithm secret would not add security — it would just make the system harder to audit.</p>
+      </div>
+
+      <h2 id="tradeoffs">The Trade-offs I Have Not Resolved</h2>
+      <p>I want to be honest about what is unsolved rather than present this as a complete system. It is not.</p>
+
+      <p><strong>Cross-device sync.</strong> The architecture I am designing supports sync by treating the archive as an encrypted blob that can be replicated without being decrypted by any intermediary. You sync the ciphertext — not the plaintext. A sync provider (self-hosted or a trusted third party) handles replication without seeing your data. But I have not built this yet. The sync protocol for handling conflicts between two devices that both wrote while offline is a genuinely hard problem.</p>
+
+      <p><strong>Backup UX.</strong> Local-first puts the backup responsibility on the user. Most users will not set up a backup strategy without being guided through it explicitly. The app needs to make backup frictionless — probably via OS-native encrypted backup mechanisms — without creating a path where the backup bypasses the encryption. I have not solved the UX for this yet.</p>
+
+      <p><strong>Search on encrypted content.</strong> Full-text search across encrypted Moments requires either decrypting everything in memory first, or building a client-side search index. Both approaches have trade-offs around performance and memory on older devices. I am leaning toward an in-memory decrypted index rebuilt on each unlock — simple, correct, and the performance cost is paid once per session rather than on every search. But this is not tested yet.</p>
+
+      <div class="callout callout-bad">
+        <strong>// What I will not compromise on</strong>
+        <p>There are decisions I will not walk back regardless of how hard they make things: no server-side decryption, no account required to use the app, no analytics on what you record or how often. These are constraints that come from the design premise, not features that get dropped when they become inconvenient to implement.</p>
+      </div>
+
+      <h2 id="status">Where This Is Now</h2>
+      <p>miLife is in the architecture phase. The philosophy is defined. The data model is being designed. The encryption approach is determined — the same cryptographic choices proven in LockedPages, applied to a different storage problem.</p>
+      <p>Android is the first platform. Not because I have a strong preference, but because the development tools and distribution options fit better with what an independent developer building a privacy-focused app can actually ship and maintain.</p>
+      <p>I am not publishing a timeline. The decisions I described above need to be made correctly before anything is released. A life archive that loses data, that has a subtle encryption bug, or that handles sync conflicts by silently discarding entries would be worse than not building it. There is no acceptable MVP that cuts corners on data integrity.</p>
+      <p>What I can say is that the constraints are clear: local-first, zero-knowledge, no accounts, encrypted at rest, navigable by context. Everything that gets built must satisfy all five. If a feature cannot meet that bar, it does not ship.</p>
+
+    </div>
+
+    <div class="post-footer">
+      <a href="../index.html" class="back-link">← Back to Dev MyJournal</a>
+      <span class="share-note">D.Badi · LPagesAppLabs · 2026</span>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <a href="../index.html" class="footer-logo"><span>Dev</span>MyJournal</a>
+  <div class="footer-links">
+    <a href="../index.html">All Posts</a>
+    <a href="https://lpagesapplabs.com/privacy.html" rel="noopener noreferrer">Privacy</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">Platform</a>
+    <a href="mailto:contact@lpagesapplabs.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 LPagesAppLabs / D.Badi</div>
+</footer>
+
+<script src="post.js" defer></script>
+</body>
+</html>

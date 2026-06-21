@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<!-- LPagesAppLabs Platform v1.0 · Dev MyJournal · contact@lpagesapplabs.com -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="color-scheme" content="dark">
+  <title>Clip Trimmer: From 0 to 55 Tests in One Month — Dev MyJournal</title>
+  <meta name="description" content="Building a Python CLI that automates face crop, punch zoom, and word-level captions for viral short-form video — and why 55 unit tests grew out of things silently breaking.">
+  <link rel="canonical" href="https://blog.lpagesapplabs.com/posts/clip-trimmer-55-tests.html" />
+  <meta property="og:title" content="Clip Trimmer: From 0 to 55 Tests in One Month" />
+  <meta property="og:description" content="A Python CLI that automates the mechanical parts of short-form video editing. Face crop, punch zoom, ASS captions. 55 tests because FFmpeg lies to you." />
+  <meta property="og:url" content="https://blog.lpagesapplabs.com/posts/clip-trimmer-55-tests.html" />
+  <meta property="og:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Clip Trimmer: From 0 to 55 Tests in One Month" />
+  <meta name="twitter:description" content="A Python CLI that automates the mechanical parts of short-form video editing. Face crop, punch zoom, ASS captions. 55 tests because FFmpeg lies to you." />
+  <meta name="twitter:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta name="theme-color" content="#0F172A">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="https://lpagesapplabs.com/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+  <link href="https://fonts.bunny.net/css2?family=Syne:wght@700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="clip-trimmer.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Clip Trimmer: From 0 to 55 Tests in One Month",
+  "description": "Building a Python CLI for face crop, punch zoom, and word-level captions. 55 tests cataloguing things that broke silently — FFmpeg, Whisper drift, ASS format edge cases.",
+  "author": {
+    "@type": "Person",
+    "name": "D.Badi",
+    "url": "https://lpagesapplabs.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "LPagesAppLabs",
+    "url": "https://lpagesapplabs.com"
+  },
+  "datePublished": "2026-06-19",
+  "dateModified": "2026-06-20",
+  "url": "https://blog.lpagesapplabs.com/posts/clip-trimmer-55-tests.html",
+  "keywords": "Python, CLI, FFmpeg, Whisper, testing, video automation, Clip Trimmer",
+  "image": "https://lpagesapplabs.com/og-image.png"
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div id="progress-bar"></div>
+
+<nav>
+  <a href="../index.html" class="nav-logo"><span>Dev</span>MyJournal</a>
+  <div class="nav-links">
+    <a href="../index.html">← All Posts</a>
+    <a href="https://clip-trimmer.lpagesapplabs.com" rel="noopener noreferrer">Clip Trimmer</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">Platform</a>
+  </div>
+</nav>
+
+<main class="page-wrap" id="main-content">
+
+  <aside class="toc-aside">
+    <div class="toc-label">// In this post</div>
+    <ul class="toc-list" id="toc">
+      <li><a href="#the-problem" class="h2">The Problem</a></li>
+      <li><a href="#the-pipeline" class="h2">The Pipeline</a></li>
+      <li><a href="#whisper" class="h3">Whisper Timestamps</a></li>
+      <li><a href="#face-tracking" class="h3">Face Tracking</a></li>
+      <li><a href="#punch-zoom" class="h3">Punch Zoom</a></li>
+      <li><a href="#ass-captions" class="h3">ASS Captions</a></li>
+      <li><a href="#the-tests" class="h2">The 55 Tests</a></li>
+      <li><a href="#ci" class="h2">CI/CD</a></li>
+      <li><a href="#whats-next" class="h2">What's Next</a></li>
+    </ul>
+  </aside>
+
+  <article>
+    <div class="post-meta-bar">
+      <span class="cat-tag">Tools</span>
+      <span class="depth-tag">Build Log</span>
+      <span class="meta-info">D.Badi · 2026-06-20 · 8 min read</span>
+    </div>
+
+    <h1 class="post-title">Clip Trimmer:<br>From 0 to 55 Tests in One Month</h1>
+    <p class="post-lead">I was spending two to three hours editing each short-form video. The work wasn't creative — it was the same mechanical sequence every time: crop to portrait, follow the face, add captions, add a zoom at the right moment. So I automated it. This is what I learned building the tool and why it ended up with 55 unit tests.</p>
+
+    <div class="prose">
+
+      <h2 id="the-problem">The Mechanical Part of Video Editing</h2>
+      <p>Short-form vertical video has a specific format that does not vary: 9:16 aspect ratio, face centred, captions on screen, one or two moments where the camera punches in for emphasis. If you're producing more than a few clips, you will spend a significant amount of time doing the same things in the same order.</p>
+      <p>I am not a video editor. I do not enjoy editing video. I wanted a tool I could point at a raw recording and get a usable vertical clip out of, with the mechanical work handled automatically. <em>That</em> is where Clip Trimmer started — not as a product, not as something to ship, but as something I needed to stop doing by hand.</p>
+
+      <div class="callout callout-warn">
+        <strong>// Honest scope</strong>
+        <p>Clip Trimmer is a Python CLI built for a specific content workflow. It handles a specific type of content: a single talking head on a mostly static background. It will not work well on multi-camera cuts, fast action, or anything with two people in frame. I did not over-engineer it for cases I do not have.</p>
+      </div>
+
+      <h2 id="the-pipeline">The Pipeline</h2>
+      <p>The tool takes a landscape recording and produces a portrait clip. The full pipeline is: detect face position → compute crop window → transcribe audio → generate word-level timestamps → identify high-energy moments → apply punch zoom → burn captions → output. In practice each of those steps has at least one failure mode I did not anticipate.</p>
+
+      <h3 id="whisper">Whisper Timestamps: Useful, But They Drift</h3>
+      <p>I use an open-source speech recognition model for transcription. It can return word-level timestamps — not just what was said, but <em>when</em> each word was spoken. That is exactly what active-word caption highlighting requires.</p>
+      <p>The problem is timestamp drift. Whisper's word-level timestamps are computed relative to an internal audio segmentation that does not always align with the real audio clock. On longer clips, the reported timestamps can drift noticeably from where the words actually land — enough to make captions feel subtly out of sync without being obviously broken.</p>
+      <p>The fix I use is to align reported timestamps against the actual audio waveform: when a segment boundary and an energy boundary in the audio are close, I trust the measured audio over the model's estimate. It handles most drift cases. Background noise situations can produce false positives — those remain unsolved.</p>
+
+      <h3 id="face-tracking">Face Tracking: Simpler Than I Thought, Then Harder</h3>
+      <p>I use a face detection library to find the face position in each frame, then compute a 9:16 crop window centred on the face. For the first few clips this worked immediately and I thought this was going to be the easy part.</p>
+      <p>It is not the easy part. The problems I ran into:</p>
+      <ul>
+        <li><strong>Face partially out of frame.</strong> When the speaker leans sideways the detected face box can extend past the video edge. The crop window needs to be clamped, but clamping it too aggressively makes the face off-centre. There is a tradeoff here that I tuned by hand.</li>
+        <li><strong>No face detected.</strong> Looking down at notes, turning sideways briefly, reaching for something. The tool needs to hold the last known position and drift back to centre gradually, not snap or freeze.</li>
+        <li><strong>Processing speed.</strong> Running face detection on every frame of a long clip is slow. I sample frames at intervals and interpolate positions in between. This is fast enough and smooth enough that the interpolation is not visible.</li>
+      </ul>
+      <p>The crop coordinates go into an FFmpeg <code>crop</code> filter with the computed x,y values. FFmpeg takes it from there.</p>
+
+      <h3 id="punch-zoom">Punch Zoom: Timing Is Everything</h3>
+      <p>Punch zoom is a brief scale-up applied at a moment of emphasis. In manually edited video, the editor chooses those moments by feel. I automate it using audio energy: a peak in the audio energy envelope above a threshold triggers a zoom, with a cooldown period between triggers to prevent rapid-fire stacking.</p>
+      <p>This works most of the time. It breaks when someone speaks quietly throughout (no energy peaks, no zooms) or when there are ambient sounds (a knock on a desk triggers a zoom on the wrong frame). Neither of those has a clean automated solution. The current version does not try to solve them — it just flags in the output log when a zoom trigger looked suspicious, so you can review it.</p>
+
+      <h3 id="ass-captions">ASS Captions: The Format Nobody Loves</h3>
+      <p>The caption format I use is ASS — Advanced SubStation Alpha. It is a 1990s subtitle format with an XML-era aesthetic that has not aged gracefully. The documentation is scattered across forum posts from 2004. The parameter names are inconsistent. The colour encoding is <code>&amp;H00FFFFFF&amp;</code> in BGRA order, which is backwards from every other colour format in existence.</p>
+      <p>I use it anyway because it is the only widely-supported format that can highlight the currently spoken word in a different colour while the rest of the caption stays on screen. SRT cannot do this. VTT cannot do this. ASS can, via per-word colour overrides embedded inline. The FFmpeg <code>ass</code> filter burns it into the video.</p>
+      <p>It works, it looks good, and every time I look at the raw ASS file I feel a small amount of regret about the format choice. There is no better option.</p>
+
+      <h2 id="the-tests">The 55 Tests</h2>
+      <p>The test suite did not start with a goal of 55 tests. It started with one test: does the face detection return a bounding box given this image? The suite grew because things broke in ways I did not expect, and each breakage became a test.</p>
+      <p>A few examples of failures that became tests:</p>
+      <ul>
+        <li><strong>FFmpeg exits with code 0 on some errors.</strong> An invalid filter chain, on certain versions of FFmpeg, returns exit code 0 and produces a zero-byte output file. The first time this happened I thought the clip had exported successfully. Now I check output file size and duration.</li>
+        <li><strong>Whisper returns an empty segments list on silence.</strong> A recording that starts with 3 seconds of silence before speech confuses the VAD (voice activity detection) in some Whisper configurations. The caption writer must handle an empty input without crashing.</li>
+        <li><strong>Face crop coordinates must be even numbers.</strong> FFmpeg's <code>crop</code> filter requires even-number dimensions for YUV encoding. A face at an odd pixel position produces a 1-pixel rounding error that causes a warning on some codec configs and an error on others. Now all crop values are rounded down to even.</li>
+        <li><strong>Punch zoom at the very end of a clip.</strong> A zoom triggered near the end of a clip produces an FFmpeg filter chain error because the output would extend past the clip duration. Now zoom triggers too close to the end are discarded.</li>
+      </ul>
+
+      <div class="callout callout-good">
+        <strong>// What the tests actually document</strong>
+        <p>Most of these 55 tests are not testing abstract logic. They are testing specific, concrete failure modes that happened to real clips. Each one is a contract: "this specific thing that broke before must not break again." That is more useful than tests written speculatively about what might go wrong.</p>
+      </div>
+
+      <h2 id="ci">CI/CD: Catching Things I Miss</h2>
+      <p>The test suite runs on every push via a CI pipeline. The pipeline installs dependencies, runs the full test suite against a set of fixture clips, and fails the build if anything breaks.</p>
+      <p>Before I had CI, I broke the caption writer twice by refactoring the timestamp alignment code and not realising the change affected caption timing. Both times I only noticed when I watched an exported clip and the captions were wrong. With CI, those failures show up as red in the push — before the clip is ever rendered.</p>
+      <p>Three bugs that CI caught before they shipped:</p>
+      <ol>
+        <li>A change to the energy envelope normalisation that made zoom triggers fire on nearly every frame.</li>
+        <li>A path handling bug on paths with spaces that only failed on my second test machine.</li>
+        <li>A Whisper model version mismatch where the output dictionary structure changed between model versions.</li>
+      </ol>
+      <p>None of those are interesting bugs. They are exactly the kind of dull, boring regression that a test suite exists to catch so I do not have to catch them manually.</p>
+
+      <h2 id="whats-next">What Is Next</h2>
+      <p>V2 is complete. The pipeline works end to end. The test suite covers the known failure modes. The E2E test on real production clips is still in progress — it is the last thing before I consider this genuinely reliable for regular use.</p>
+      <p>V3 is real work. <em>Smart tracking</em> means following the active speaker even when they move significantly — current tracking loses the face if the person walks out of the initial frame. <em>AI-guided cuts</em> means identifying automatically which 60 seconds of a 10-minute recording are worth clipping — that requires understanding content, not just audio energy.</p>
+      <p>Both of those are months away. I am not building them until V2 is proven stable on real content. Building features on top of a shaky foundation is how you end up with a complicated tool that does not work reliably.</p>
+
+      <div class="callout callout-warn">
+        <strong>// Will it work for your workflow?</strong>
+        <p>Maybe. If your content is a single talking head on a reasonably static background, it probably will. If you have multiple speakers, frequent camera movement, or highly variable audio levels, it will produce inconsistent results. The tool is honest about its scope — it solves one specific problem well, not the general problem approximately.</p>
+      </div>
+
+    </div>
+
+    <div class="post-footer">
+      <a href="../index.html" class="back-link">← Back to Dev MyJournal</a>
+      <span class="share-note">D.Badi · LPagesAppLabs · 2026</span>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <a href="../index.html" class="footer-logo"><span>Dev</span>MyJournal</a>
+  <div class="footer-links">
+    <a href="../index.html">All Posts</a>
+    <a href="https://lpagesapplabs.com/privacy.html" rel="noopener noreferrer">Privacy</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">Platform</a>
+    <a href="mailto:contact@lpagesapplabs.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 LPagesAppLabs / D.Badi</div>
+</footer>
+
+<script src="post.js" defer></script>
+</body>
+</html>
