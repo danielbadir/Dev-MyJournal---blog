@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<!-- LPagesAppLabs Platform v1.0 · Dev MyJournal · contact@lpagesapplabs.com -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="color-scheme" content="dark">
+  <title>Dev MyJournal — LPagesAppLabs</title>
+  <meta name="description" content="Build logs, security deep-dives, and engineering notes from LPagesAppLabs / D.Badi. Honest writing about what it takes to ship privacy-first software.">
+  <link rel="canonical" href="https://blog.lpagesapplabs.com/" />
+  <meta property="og:title" content="Dev MyJournal — LPagesAppLabs" />
+  <meta property="og:description" content="Build logs, security insights, and engineering notes. No fluff." />
+  <meta property="og:url" content="https://blog.lpagesapplabs.com/" />
+  <meta property="og:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Dev MyJournal — LPagesAppLabs" />
+  <meta name="twitter:description" content="Build logs, security insights, and engineering notes. No fluff." />
+  <meta name="twitter:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta name="theme-color" content="#0F172A">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="https://lpagesapplabs.com/logo.svg" type="image/svg+xml">
+  <script src="main.js"></script>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="preload" href="fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/dm-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav>
+  <a href="#hero" class="nav-logo"><span class="accent">Dev</span>MyJournal</a>
+  <div class="nav-right">
+    <div class="nav-links">
+      <a href="#" data-filter="all">All</a>
+      <a href="#" data-filter="security">Security</a>
+      <a href="#" data-filter="gamedev">GameDev</a>
+      <a href="#" data-filter="privacy">Privacy</a>
+      <a href="#" data-filter="tools">Tools</a>
+      <a href="#subscribe">Subscribe</a>
+    </div>
+    <a href="https://lpagesapplabs.com" class="nav-back" rel="noopener noreferrer">← Platform</a>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu" aria-expanded="false" aria-controls="navMobile"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="nav-mobile" id="navMobile">
+  <a href="#" data-filter="all">All Posts</a>
+  <a href="#" data-filter="security">Security</a>
+  <a href="#" data-filter="gamedev">GameDev</a>
+  <a href="#" data-filter="privacy">Privacy</a>
+  <a href="#" data-filter="tools">Tools</a>
+  <a href="#subscribe">Subscribe</a>
+  <a href="https://lpagesapplabs.com" rel="noopener noreferrer">← Platform</a>
+</div>
+
+<main id="main-content">
+<!-- HERO -->
+<header id="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">D.Badi · LPagesAppLabs</div>
+      <h1>The <span class="accent">Dev</span><br>MyJournal</h1>
+      <p class="hero-desc">Build logs, security deep-dives, and engineering notes from LPagesAppLabs. No fluff. Honest progress reports. Real engineering decisions explained.</p>
+      <div class="hero-meta">
+        <span><span class="dot security"></span>Security</span>
+        <span><span class="dot gamedev"></span>GameDev</span>
+        <span><span class="dot privacy"></span>Privacy</span>
+        <span><span class="dot tools"></span>Tools</span>
+      </div>
+    </div>
+    <div class="build-status">
+      <div class="bs-title">// current builds</div>
+      <div class="bs-item">
+        <div class="bs-name">LockedPages</div>
+        <div class="bs-row">
+          <div class="bs-phase">Closed Beta</div>
+          <div class="bs-bar"><div class="bs-fill lp"></div></div>
+          
+        </div>
+      </div>
+      <div class="bs-item">
+        <div class="bs-name">Galaxy Diamond</div>
+        <div class="bs-row">
+          <div class="bs-phase">Core engine</div>
+          <div class="bs-bar"><div class="bs-fill gd"></div></div>
+          
+        </div>
+      </div>
+      <div class="bs-item">
+        <div class="bs-name">Mini Motor Maze</div>
+        <div class="bs-row">
+          <div class="bs-phase">Phase 1</div>
+          <div class="bs-bar"><div class="bs-fill mmm"></div></div>
+          
+        </div>
+      </div>
+      <div class="bs-item">
+        <div class="bs-name">miLife</div>
+        <div class="bs-row">
+          <div class="bs-phase">Phase 0</div>
+          <div class="bs-bar"><div class="bs-fill ml"></div></div>
+          
+        </div>
+      </div>
+      <div class="bs-item">
+        <div class="bs-name">Clip Trimmer</div>
+        <div class="bs-row">
+          <div class="bs-phase">V2 shipped</div>
+          <div class="bs-bar"><div class="bs-fill ct"></div></div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div id="filter-bar">
+  <div class="filter-inner">
+    <button class="filter-btn active" data-cat="all" aria-pressed="true">All Posts</button>
+    <button class="filter-btn" data-cat="security" aria-pressed="false">Security</button>
+    <button class="filter-btn" data-cat="gamedev" aria-pressed="false">GameDev</button>
+    <button class="filter-btn" data-cat="privacy" aria-pressed="false">Privacy</button>
+    <button class="filter-btn" data-cat="tools" aria-pressed="false">Tools</button>
+  </div>
+</div>
+
+<!-- POSTS -->
+<section id="posts">
+  <div class="posts-inner">
+    <div class="posts-grid" id="postsGrid">
+
+      <!-- POST 1: Published -->
+      <a href="/argon2id-vs-pbkdf2" class="post-card" data-cat="security">
+        <div class="post-top">
+          <span class="cat-tag cat-security">Security</span>
+          <span class="status-badge status-published">Published</span>
+        </div>
+        <h3 class="post-title">Argon2id vs PBKDF2: Why I Upgraded LockedPages</h3>
+        <div class="post-excerpt">PBKDF2 at 600,000 iterations takes 150 ms on a modern CPU — and 2 ms on a GPU. Argon2id is the OWASP #1 recommendation for a reason. Here is the full migration story.</div>
+        <div class="depth-badge">Deep Dive</div>
+        <div class="post-footer">
+          <div class="post-meta"><span>2026-06-18</span><span>6 min read</span></div>
+          <div class="post-arrow" aria-hidden="true">→</div>
+        </div>
+      </a>
+
+      <!-- POST 2: Published -->
+      <a href="/zero-knowledge-milife" class="post-card" data-cat="privacy">
+        <div class="post-top">
+          <span class="cat-tag cat-privacy">Privacy</span>
+          <span class="status-badge status-published">Published</span>
+        </div>
+        <h3 class="post-title">Zero-Knowledge by Design: Architecture Notes for miLife</h3>
+        <div class="post-excerpt">Building a private life archive — no accounts, no cloud, no one else. The design decisions behind Lives & Moments, local-first storage, and why AES-256-GCM from the start.</div>
+        <div class="depth-badge">Architecture</div>
+        <div class="post-footer">
+          <div class="post-meta"><span>2026-06-19</span><span>7 min read</span></div>
+          <div class="post-arrow" aria-hidden="true">→</div>
+        </div>
+      </a>
+
+      <!-- POST 3: Planned -->
+      <div class="post-card coming" data-cat="gamedev">
+        <div class="post-top">
+          <span class="cat-tag cat-gamedev">GameDev</span>
+          <span class="status-badge status-planned">Planned</span>
+        </div>
+        <h3 class="post-title">Adaptive Difficulty in Match-3: How We Built the AI System</h3>
+        <div class="series-indicator">Series: Galaxy Diamond Devlog · Part 1</div>
+        <div class="post-excerpt">Naive difficulty curves treat every player identically and fail them both. This is how we built an adaptive AI system that reads momentum and adjusts invisibly — and why the design turned out harder than the implementation.</div>
+        <div class="depth-badge">Engineering</div>
+        <div class="post-footer">
+          <div class="post-meta"><span>Planned</span><span>~12 min read</span></div>
+          <div class="post-arrow">⋯</div>
+        </div>
+      </div>
+
+      <!-- POST 4: Published -->
+      <a href="/clip-trimmer-55-tests" class="post-card" data-cat="tools">
+        <div class="post-top">
+          <span class="cat-tag cat-tools">Tools</span>
+          <span class="status-badge status-published">Published</span>
+        </div>
+        <h3 class="post-title">Clip Trimmer: From 0 to 55 Tests in One Month</h3>
+        <div class="post-excerpt">Building a Python CLI that automates face crop, punch zoom, and word-level captions. The 55 tests are a catalogue of things that broke silently — FFmpeg, Whisper drift, ASS format edge cases.</div>
+        <div class="depth-badge">Build Log</div>
+        <div class="post-footer">
+          <div class="post-meta"><span>2026-06-19</span><span>8 min read</span></div>
+          <div class="post-arrow" aria-hidden="true">→</div>
+        </div>
+      </a>
+
+      <!-- POST 5: Planned -->
+      <div class="post-card coming" data-cat="research">
+        <div class="post-top">
+          <span class="cat-tag cat-research">Research</span>
+          <span class="status-badge status-planned">Planned</span>
+        </div>
+        <h3 class="post-title">.apx Format: The Design Principles Behind a Smarter Archive</h3>
+        <div class="post-excerpt">Standard archive formats treat files as flat lists. The .apx format was designed around different principles — content-awareness, deduplication, and searchability. This is why the distinction matters and what it enables.</div>
+        <div class="depth-badge">Research</div>
+        <div class="post-footer">
+          <div class="post-meta"><span>Planned</span><span>~14 min read</span></div>
+          <div class="post-arrow">⋯</div>
+        </div>
+      </div>
+
+      <!-- POST 6: Planned -->
+      <div class="post-card coming" data-cat="gamedev">
+        <div class="post-top">
+          <span class="cat-tag cat-gamedev">GameDev</span>
+          <span class="status-badge status-planned">Planned</span>
+        </div>
+        <h3 class="post-title">Unity 6 ScriptableObjects: The Architecture Behind Mini Motor Maze</h3>
+        <div class="series-indicator">Series: Mini Motor Maze Devlog · Part 1</div>
+        <div class="post-excerpt">ScriptableObjects as the single source of truth for car stats, track configs, and level data. The pattern that lets us balance 20 levels without touching a line of code.</div>
+        <div class="depth-badge">Engineering</div>
+        <div class="post-footer">
+          <div class="post-meta"><span>Planned</span><span>~9 min read</span></div>
+          <div class="post-arrow">⋯</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="empty-msg" id="emptyMsg">No posts in this category yet — check back soon.</div>
+  </div>
+</section>
+
+<!-- SUBSCRIBE -->
+<section id="subscribe">
+  <div class="sub-inner">
+    <div class="sub-label">// New posts · no spam</div>
+    <h2 class="sub-title">Get notified when a post drops</h2>
+    <p class="sub-desc">New articles are infrequent and deliberate. When something ships or something interesting is solved — you'll hear about it.</p>
+    <form class="notify-form" data-product="DevMyJournal">
+      <input type="email" class="notify-input" placeholder="your@email.com" autocomplete="email" required aria-label="Email address" />
+      <button type="submit" class="notify-btn">Notify me</button>
+    </form>
+    <p class="notify-note">Opens your email client. No server. No tracking. No third party.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <a href="#hero" class="footer-logo"><span>Dev</span>MyJournal · LPagesAppLabs</a>
+  <div class="footer-links">
+    <a href="https://lpagesapplabs.com/privacy.html" rel="noopener noreferrer">Privacy</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">← Platform</a>
+    <a href="mailto:contact@lpagesapplabs.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 LPagesAppLabs / D.Badi</div>
+</footer>
+
+</body>
+</html>

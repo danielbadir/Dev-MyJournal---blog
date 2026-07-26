@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<!-- LPagesAppLabs Platform v1.0 · Dev MyJournal · contact@lpagesapplabs.com -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="color-scheme" content="dark">
+  <title>Argon2id vs PBKDF2: Why I Upgraded LockedPages — Dev MyJournal</title>
+  <meta name="description" content="PBKDF2 at 600K iterations takes 150ms on a CPU — and 2ms on a GPU. Here's why Argon2id is the right choice for encryption apps and how LockedPages made the switch.">
+  <link rel="canonical" href="https://blog.lpagesapplabs.com/argon2id-vs-pbkdf2" />
+  <meta property="og:title" content="Argon2id vs PBKDF2: Why I Upgraded LockedPages" />
+  <meta property="og:description" content="PBKDF2 at 600K iterations: 150ms on CPU, 2ms on GPU. Here's the full migration story." />
+  <meta property="og:url" content="https://blog.lpagesapplabs.com/argon2id-vs-pbkdf2" />
+  <meta property="og:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Argon2id vs PBKDF2: Why I Upgraded LockedPages" />
+  <meta name="twitter:description" content="PBKDF2 at 600K iterations: 150ms on CPU, 2ms on GPU. Here's the full migration story." />
+  <meta name="twitter:image" content="https://lpagesapplabs.com/og-image.png" />
+  <meta name="theme-color" content="#0F172A">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" href="https://lpagesapplabs.com/logo.svg" type="image/svg+xml">
+  <script src="main.js"></script>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="preload" href="fonts/syne-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/dm-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="argon2id.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Argon2id vs PBKDF2: Why I Upgraded LockedPages",
+  "description": "PBKDF2 at 600K iterations: 150ms on CPU, 2ms on GPU. Here's the full migration story.",
+  "author": {
+    "@type": "Person",
+    "name": "D.Badi",
+    "url": "https://lpagesapplabs.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "LPagesAppLabs",
+    "url": "https://lpagesapplabs.com"
+  },
+  "datePublished": "2026-06-18",
+  "dateModified": "2026-06-20",
+  "url": "https://blog.lpagesapplabs.com/argon2id-vs-pbkdf2",
+  "keywords": "Argon2id, PBKDF2, key derivation, password hashing, OWASP, LockedPages, security",
+  "image": "https://lpagesapplabs.com/og-image.png"
+}
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div id="progress-bar"></div>
+
+<nav>
+  <a href="/" class="nav-logo"><span>Dev</span>MyJournal</a>
+  <div class="nav-links">
+    <a href="/">← All Posts</a>
+    <a href="https://lockedpages.lpagesapplabs.com" rel="noopener noreferrer">LockedPages</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">Platform</a>
+  </div>
+</nav>
+
+<main class="page-wrap" id="main-content">
+
+  <!-- TABLE OF CONTENTS -->
+  <aside class="toc-aside">
+    <div class="toc-label">// In this post</div>
+    <ul class="toc-list" id="toc">
+      <li><a href="#the-problem" class="h2">The Problem</a></li>
+      <li><a href="#pbkdf2-reality" class="h2">PBKDF2 Reality Check</a></li>
+      <li><a href="#argon2id-design" class="h2">How Argon2id Solves It</a></li>
+      <li><a href="#the-parameters" class="h3 h3">Choosing Parameters</a></li>
+      <li><a href="#comparison" class="h2">Head-to-Head</a></li>
+      <li><a href="#migration" class="h2">The Migration</a></li>
+      <li><a href="#verdict" class="h2">Verdict</a></li>
+    </ul>
+  </aside>
+
+  <!-- ARTICLE -->
+  <article>
+    <div class="post-meta-bar">
+      <span class="cat-tag">Security</span>
+      <span class="depth-tag">Deep Dive</span>
+      <span class="meta-info">D.Badi · 2026-06-18 · 6 min read</span>
+    </div>
+
+    <h1 class="post-title">Argon2id vs PBKDF2:<br>Why I Upgraded LockedPages</h1>
+    <p class="post-lead">PBKDF2 at 600,000 iterations takes about 150 ms on a modern CPU. On a consumer GPU with parallelism, it takes 2 ms — or less. That's a 75× attack advantage. Argon2id closes that gap by design. Here's the full story of why I made the switch and how.</p>
+
+    <div class="prose">
+
+      <h2 id="the-problem">The Problem With Iteration-Based KDFs</h2>
+      <p>LockedPages uses a <em>key derivation function</em> (KDF) to turn a user's password into an AES-256 encryption key. For a long time, the industry standard for this was PBKDF2 — Password-Based Key Derivation Function 2. It's been in everything from iOS Keychain to Wi-Fi WPA2.</p>
+      <p>The idea is simple: apply a hash function repeatedly so that brute-forcing a password requires many computations instead of one. At 600,000 iterations using SHA-256, PBKDF2 is legitimately slow on a single CPU core: around 150 ms per guess.</p>
+      <p>The problem? Modern GPUs can run thousands of these computations in parallel. PBKDF2 was designed in 1999, when GPU cracking wasn't on the radar. It has no protection against parallel attacks because the algorithm has <strong>constant memory usage</strong> — each iteration uses the same tiny amount of RAM regardless of how many iterations you run.</p>
+
+      <div class="callout callout-bad">
+        <strong>// The gap</strong>
+        <p>A 2023 RTX 4090 can hash SHA-256 at over 22 GH/s. At 600,000 iterations, that's roughly 37,000 password guesses per second. An 8-character lowercase-plus-digit space is about 2.8 trillion combinations — roughly two and a half years to exhaust at that rate, or about fifteen months on average. Drop to seven characters and the same hardware is through the entire space in under a month.</p>
+      </div>
+
+      <h2 id="pbkdf2-reality">PBKDF2: A Realistic Attack Scenario</h2>
+      <p>Consider a user with the password <code>summer2026</code> — 10 characters, lowercase + digits, common pattern. That's roughly 36^10 combinations, but password patterns dramatically reduce real-world entropy. Automated cracking tools with curated wordlists make this much faster than brute force.</p>
+      <p>With PBKDF2-SHA256 at 600,000 iterations, a modern GPU cracking rig can test tens of thousands of password guesses per second. A 10-character password using common patterns can fall in under a day; an 8-character dictionary word falls in minutes. The exact numbers depend on hardware, but the attack is well within practical reach on consumer equipment — let alone a rented cloud cluster.</p>
+      <p>The fundamental issue is that PBKDF2 is <em>trivially parallelisable</em> — each guess is completely independent and uses negligible memory.</p>
+
+      <div class="callout callout-warn">
+        <strong>// The core flaw</strong>
+        <p>PBKDF2 makes the attacker's problem cheap to parallelize. You can throw 1,000 GPU cores at it and get 1,000× the speed. Memory-hard functions break this relationship by requiring each guess to consume significant RAM — parallelism becomes the bottleneck.</p>
+      </div>
+
+      <h2 id="argon2id-design">How Argon2id Solves It</h2>
+      <p>Argon2 won the <a href="https://www.password-hashing.net/" rel="noopener noreferrer">Password Hashing Competition in 2015</a> and is OWASP's #1 recommendation for password hashing as of 2024. The "id" variant combines two approaches: Argon2i (resistant to side-channel attacks) and Argon2d (resistant to GPU/ASIC attacks).</p>
+      <p>The key insight is <strong>memory-hardness</strong>: Argon2id fills a large block of RAM with pseudorandom data and then processes it. To compute a single hash, you need to hold that entire memory block. This means:</p>
+      <ul>
+        <li>Running 1,000 parallel guesses requires 1,000× the RAM — not 1,000× the GPU cores</li>
+        <li>Modern GPUs have limited per-core RAM (typically 1–4 KB), making mass parallelism impractical</li>
+        <li>The cost of cracking scales with both time AND memory — a 2D cost function</li>
+      </ul>
+
+      <h3 id="the-parameters">Choosing the Right Parameters</h3>
+      <p>Argon2id has three parameters: <code>m</code> (memory in KiB), <code>t</code> (time iterations), and <code>p</code> (parallelism). OWASP publishes minimum recommendations for interactive logins — enough to be genuinely expensive to attack at scale, while keeping the unlock experience fast enough on a mid-range phone.</p>
+      <p>The memory cost is the key. With 64 MB required per hash attempt, a GPU with 12 GB VRAM can run at most a few hundred parallel guesses. Compare to PBKDF2, which can run tens of thousands in parallel on the same hardware. The attacker's advantage evaporates. For LockedPages, I chose parameters at or above OWASP's interactive login recommendation — the unlock delay is noticeable but not frustrating, and that cost is the whole point.</p>
+
+      <h2 id="comparison">Head-to-Head Comparison</h2>
+      <table class="compare-table">
+        <thead>
+          <tr><th>Property</th><th>PBKDF2-SHA256 (600K)</th><th>Argon2id (OWASP-recommended)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Memory per guess</td><td class="lose">~1 KB</td><td class="win">64 MB</td></tr>
+          <tr><td>CPU time (modern device)</td><td class="neutral">~150 ms</td><td class="neutral">~400 ms</td></tr>
+          <tr><td>GPU parallelism</td><td class="lose">Thousands of cores</td><td class="win">Limited by RAM</td></tr>
+          <tr><td>ASIC resistance</td><td class="lose">Low</td><td class="win">High</td></tr>
+          <tr><td>OWASP 2024 recommendation</td><td class="lose">Fourth choice (not preferred)</td><td class="win">Yes (#1 choice)</td></tr>
+          <tr><td>Android library availability</td><td class="win">Built-in</td><td class="win">argon2-android</td></tr>
+          <tr><td>Salt support</td><td class="win">Yes</td><td class="win">Yes</td></tr>
+          <tr><td>Estimated crack time (8-char weak)</td><td class="lose">Minutes to hours</td><td class="win">Years on same hardware</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="migration">The Migration in LockedPages</h2>
+      <p>Migrating a KDF in a zero-knowledge encryption app is non-trivial. The key is derived from the user's password — we don't store the key, only encrypted data. Changing the KDF means existing encrypted files need to be re-encrypted with a new key.</p>
+      <p>The migration strategy we used:</p>
+      <ol>
+        <li><strong>Detect KDF version in file header.</strong> Each archive file carries a header field that records which KDF was used to derive the key. Old files are detected on open and flagged for upgrade.</li>
+        <li><strong>Prompt on first open after update.</strong> When the user opens an old file on the new version, they're prompted to "upgrade encryption." This requires their password once.</li>
+        <li><strong>Decrypt → re-encrypt in one pass.</strong> The app decrypts with the old PBKDF2-derived key, then re-encrypts with the new Argon2id-derived key. The plaintext never touches disk.</li>
+        <li><strong>Verify integrity before commit.</strong> Re-decrypt with the new key and confirm the result matches before overwriting the original. Never delete before verifying.</li>
+      </ol>
+
+      <div class="callout callout-good">
+        <strong>// Why this is safe</strong>
+        <p>The original file is kept intact until the migration and verification both pass. On most Android devices the full migration per file is fast enough that users notice it only as a brief progress indicator — dominated by the Argon2id KDF call, which is intentionally slow.</p>
+      </div>
+
+      <h2 id="verdict">Verdict</h2>
+      <p>PBKDF2 isn't broken in the cryptographic sense — the SHA-256 hash underlying it is sound. But in 2026, for a privacy-first encryption app, using PBKDF2 when Argon2id is available is an unnecessary risk. The library support is there, the standards have caught up, and the user experience cost (slightly slower unlock) is justified by the security gain.</p>
+      <p>For LockedPages, the decision was clear: Argon2id with OWASP-recommended parameters. GPU-resistant, future-proof, and the standard will only strengthen over time as hardware improves.</p>
+      <p>If you're building a mobile encryption app and still using PBKDF2, this is your sign to upgrade.</p>
+
+    </div>
+
+    <!-- POST FOOTER -->
+    <div class="post-footer">
+      <a href="/" class="back-link">← Back to Dev MyJournal</a>
+      <span class="share-note">D.Badi · LPagesAppLabs · 2026</span>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <a href="/" class="footer-logo"><span>Dev</span>MyJournal</a>
+  <div class="footer-links">
+    <a href="/">All Posts</a>
+    <a href="https://lpagesapplabs.com/privacy.html" rel="noopener noreferrer">Privacy</a>
+    <a href="https://lpagesapplabs.com" rel="noopener noreferrer">Platform</a>
+    <a href="mailto:contact@lpagesapplabs.com">Contact</a>
+  </div>
+  <div class="footer-copy">© 2026 LPagesAppLabs / D.Badi</div>
+</footer>
+
+<script src="post.js" defer></script>
+</body>
+</html>
