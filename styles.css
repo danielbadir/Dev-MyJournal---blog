@@ -7,7 +7,7 @@
       --amber-glow2: rgba(245,158,11,0.07);
       --cyan: #22D3EE; --emerald: #10B981;
       --violet: #8B5CF6; --rose: #F43F5E; --sky: #7DD3FC;
-      --white: #F8FAFC; --muted: #94A3B8;
+      --white: #F8FAFC; --muted: #94A3B8; --muted-dim: #8A97A8;
       --border: rgba(245,158,11,0.18);
     }
     html { scroll-behavior: smooth; }
@@ -115,7 +115,7 @@
     .post-excerpt { font-size:0.86rem; color:var(--muted); line-height:1.65; flex:1; }
     .post-footer { display:flex; align-items:center; justify-content:space-between; padding-top:0.8rem; border-top:1px solid rgba(255,255,255,0.05); }
     .post-meta { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted); display:flex; gap:0.8rem; }
-    .post-arrow { font-size:0.85rem; color:var(--muted); opacity:0.4; }
+    .post-arrow { font-size:0.85rem; color:var(--muted-dim); }
     .depth-badge { font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.06em; text-transform:uppercase; padding:0.15rem 0.5rem; border-radius:4px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:var(--muted); }
     .series-indicator { font-family:'DM Mono',monospace; font-size:0.62rem; color:var(--amber); margin-top:0.2rem; }
 
@@ -126,12 +126,12 @@
     .sub-title { font-family:'Syne',sans-serif; font-size:clamp(1.5rem,3vw,2rem); font-weight:700; margin-bottom:0.6rem; }
     .sub-desc { color:var(--muted); font-size:0.9rem; margin-bottom:1.8rem; }
     .notify-form { display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; }
-    .notify-input { flex:1; min-width:220px; padding:0.75rem 1rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'DM Mono',monospace; font-size:0.85rem; outline:none; transition:border-color 0.2s; }
+    .notify-input { flex:1; min-width:220px; padding:0.75rem 1rem; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'DM Mono',monospace; font-size:0.85rem; transition:border-color 0.2s; }
     .notify-input::placeholder { color:var(--muted); }
     .notify-input:focus { border-color:var(--amber); }
     .notify-btn { padding:0.75rem 1.6rem; background:var(--amber); color:#0F172A; border:none; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:0.9rem; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
     .notify-btn:hover { background:var(--amber-dim); transform:translateY(-1px); box-shadow:0 4px 20px rgba(245,158,11,0.4); }
-    .notify-note { font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--muted); margin-top:0.9rem; opacity:0.7; }
+    .notify-note { font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--muted-dim); margin-top:0.9rem; }
 
     /* FOOTER */
     footer { padding:2.5rem 5%; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; }
@@ -140,7 +140,7 @@
     .footer-links { display:flex; gap:1.8rem; flex-wrap:wrap; }
     .footer-links a { font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); text-decoration:none; transition:color 0.2s; }
     .footer-links a:hover { color:var(--amber); }
-    .footer-copy { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); opacity:0.5; }
+    .footer-copy { font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted-dim); }
 
     /* EMPTY STATE */
     .empty-msg { display:none; text-align:center; padding:4rem 0; color:var(--muted); font-family:'DM Mono',monospace; font-size:0.85rem; }
@@ -181,3 +181,36 @@
   transition: top 0.15s ease;
 }
 .skip-link:focus { top: 0; outline: 2px solid #0F172A; outline-offset: 2px; }
+
+/* Focus is a designed state, not a browser default. Nothing on this platform
+   defined one except .skip-link, and five inputs actively removed the ring and
+   signalled focus with a 1px border tint only — a colour-only indicator, which
+   fails WCAG 1.4.1 and 2.4.7. White on these surfaces measures >13:1.
+   :focus-visible, so pointer users never see a ring they did not ask for. */
+:focus-visible {
+  outline: 2px solid #F8FAFC;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+a:focus-visible, button:focus-visible, input:focus-visible,
+[tabindex]:focus-visible, .btn:focus-visible {
+  outline: 2px solid #F8FAFC;
+  outline-offset: 2px;
+}
+
+/* Card titles are h3 so screen readers and search engines can navigate by
+   heading; :where() keeps specificity at 0 so the existing class rules,
+   which were written for divs, continue to control every visual property. */
+:where(h3.work-name, h3.feature-title, h3.step-title, h3.svc-title, h3.prod-name, h3.post-title, h3.concept-title, h3.why-title, h3.card-title, h3.tier-name) {
+  margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit;
+}
+:where(h3.vis-title, h3.m-name, h3.goal-title, h3.lt-title, h3.how-title, h3.tier-head) {
+  margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit;
+}
+
+/* WCAG 2.5.8 — standalone nav and footer links computed ~20px tall against a
+   24px minimum. min-height with inline-flex raises the hit area without adding
+   padding that would shift the existing horizontal rhythm. */
+.nav-links a, .footer-links a, .nav-mobile a, .nav-right a {
+  display: inline-flex; align-items: center; min-height: 24px;
+}
