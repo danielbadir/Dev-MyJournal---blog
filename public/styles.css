@@ -177,7 +177,14 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
       html { scroll-behavior: auto; }
-      .js .reveal { opacity: 1; transform: none; }
+      /* This site has NO .reveal elements — 0 across all 5 pages, verified
+         2026-09-03 — so the `.js .reveal` rule that used to sit here matched
+         nothing and had never done anything. Blog reveals differently: main.js
+         sets opacity/transform INLINE on .post-card and .sub-inner. Inline
+         styles outrank any selector, so !important is what it takes to beat
+         them, and a reduced-motion user is exactly who should not be made to
+         scroll before content appears. */
+      .post-card, .sub-inner { opacity: 1 !important; transform: none !important; }
     }
   
 /* Skip-to-content — WCAG 2.4.1 Level A */
