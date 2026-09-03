@@ -27,7 +27,12 @@
     .nav-back:hover { color:var(--cyan); border-color:rgba(34,211,238,0.3); }
     .nav-hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; padding:4px; background:none; border:none; }
     .nav-hamburger span { display:block; width:22px; height:2px; background:var(--muted); border-radius:2px; }
-    .nav-mobile { display:none; flex-direction:column; background:rgba(15,23,42,0.97); border-top:1px solid var(--border); padding:1rem 5%; position:fixed; top:58px; left:0; right:0; z-index:99; }
+    /* top:100% is measured off <nav> itself, so it cannot disagree with the bar.
+       The six sites that positioned this menu each hardcoded a top of 58-62px
+       against bars computing to 62-71px, so every one tucked the menu's first few
+       pixels behind a blurred bar. There is no number here to go stale.
+       Requires #navMobile to be a CHILD of nav — see index.html. */
+    .nav-mobile { display:none; flex-direction:column; background:rgba(15,23,42,0.97); border-top:1px solid var(--border); padding:1rem 5%; z-index:99; position: absolute; top: 100%; left: 0; right: 0; }
     .nav-mobile a { font-family:'DM Mono',monospace; font-size:0.85rem; color:var(--muted); text-decoration:none; letter-spacing:0.08em; text-transform:uppercase; padding:0.75rem 0; border-bottom:1px solid rgba(255,255,255,0.04); transition:color 0.2s; }
     .nav-mobile a:last-child { border-bottom:none; }
     .nav-mobile a:hover { color:var(--amber); }
