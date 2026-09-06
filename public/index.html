@@ -246,7 +246,7 @@
       <!-- The email input deliberately has NO name attribute, and this form has
            no action. That is a control, not an oversight: main.js calls
            preventDefault() and opens a mailto, but if JavaScript never runs the
-           form submits natively as a GET to this same page -- and a named input
+           form submits natively as a GET to this same page, and a named input
            would put the visitor's email address into the URL, their browser
            history, and the Referer header of whatever they click next. Without a
            name, nothing is submitted at all. Do not "tidy" one in. -->
